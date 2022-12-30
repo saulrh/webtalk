@@ -1,4 +1,5 @@
 from webtalk.protos import webtalk_pb2_grpc
+from webtalk.protos import webtalk_pb2
 import secrets
 
 
@@ -9,29 +10,28 @@ class NickTakenError(Exception):
 class UserManager:
     def __init__(self):
         self._users = {}
-    
-    def _make_new_uid():
+
+    def _make_new_uid(self):
         def generate():
-            return secrets.randbits(64)
+            return secrets.randbits(63)
 
         u = generate()
-        while u in USERS:
+        while u in self._users:
             u = generate()
         return u
-
 
     def add_user(self, nick):
         for _, user in self._users:
             if user.nick == request.nick:
                 raise NickTakenError()
 
+        new_uid = self._make_new_uid()
         new_user = webtalk_pb2.User(
-            uid=self._make_new_uid,
+            uid=new_uid,
             nick=nick,
         )
-        self._users(new_user.uid) = new_user
+        self._users[new_user.uid] = new_user
         return new_user
-
 
     def remove_user(self, user):
         if user.uid not in self._users:

@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package webtalk;
 
-service WebTalk {
+service Webtalk {
   rpc Login(LoginRequest) returns (LoginResponse) {}
   rpc Logout(LogoutRequest) returns (LogoutResponse) {}
   rpc SendMessages(stream SendMessageRequest) returns (SendMessageResponse) {}

@@ -8,6 +8,8 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = ">=3.9,<3.11"
 grpcio-tools = "^1.51.1"
+grpcio-reflection = "^1.51.1"
+textual = {extras = ["dev"], version = "^0.8.2"}
 
 [tool.poetry.group.dev.dependencies]
 black = "^22.12.0"
@@ -17,6 +19,8 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
+webtalk = "webtalk.frontend:main"
+webtalk-server = "webtalk.backend:serve"
 
 [tool.poetry.group.test.dependencies]
 pytest = "^6.0.0"
