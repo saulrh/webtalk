@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "webtalk"
+version = "0.1.0"
+description = ""
+authors = ["Saul Reynolds-Haertle <saul@saulrh.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.9,<3.11"
+grpcio-tools = "^1.51.1"
+
+[tool.poetry.group.dev.dependencies]
+black = "^22.12.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+
+[tool.poetry.group.test.dependencies]
+pytest = "^6.0.0"
+pytest-mock = "^3.10.0"

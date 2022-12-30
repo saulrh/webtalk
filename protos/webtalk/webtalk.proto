@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+package webtalk;
+
+service WebTalk {
+  rpc Login(LoginRequest) returns (LoginResponse) {}
+  rpc Logout(LogoutRequest) returns (LogoutResponse) {}
+  rpc SendMessages(stream SendMessageRequest) returns (SendMessageResponse) {}
+  rpc ReceiveMessages(ReceiveMessageRequest) returns (stream ReceiveMessageResponse) {}
+}
+
+message User {
+  string nick = 1;
+  int64 uid = 2;
+}
+
+message SessionToken {
+  bytes token = 1;
+}
+
+message LoginRequest {
+  string nick = 1;
+}
+
+message LoginResponse {
+  SessionToken session = 1;
+  User user = 2;
+}
+
+message LogoutRequest {
+  SessionToken session = 1;
+}
+
+message LogoutResponse {
+}
+
+message SendMessageRequest {
+  SessionToken session = 1;
+}
+
+message SendMessageResponse {
+}
+
+message ReceiveMessageRequest {
+  SessionToken session = 1;
+}
+
+message ReceiveMessageResponse {
+}
