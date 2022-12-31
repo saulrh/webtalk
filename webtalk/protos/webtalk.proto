@@ -2,11 +2,15 @@ syntax = "proto3";
 
 package webtalk;
 
+import "google/protobuf/timestamp.proto";
+
 service Webtalk {
   rpc Login(LoginRequest) returns (LoginResponse) {}
   rpc Logout(LogoutRequest) returns (LogoutResponse) {}
-  rpc SendMessages(stream SendMessageRequest) returns (SendMessageResponse) {}
+  rpc UpdateMessage(UpdateMessageRequest) returns (UpdateMessageResponse) {}
+  rpc UpdateMessages(stream UpdateMessageRequest) returns (UpdateMessageResponse) {}
   rpc ReceiveMessages(ReceiveMessageRequest) returns (stream ReceiveMessageResponse) {}
+  rpc Heartbeat(HeartbeatRequest) returns (HeartbeatResponse) {}
 }
 
 message User {
@@ -34,11 +38,12 @@ message LogoutRequest {
 message LogoutResponse {
 }
 
-message SendMessageRequest {
+message UpdateMessageRequest {
   SessionToken session = 1;
+  Message msg = 2;
 }
 
-message SendMessageResponse {
+message UpdateMessageResponse {
 }
 
 message ReceiveMessageRequest {
@@ -46,4 +51,21 @@ message ReceiveMessageRequest {
 }
 
 message ReceiveMessageResponse {
+  Message msg = 1;
+}
+
+message Message {
+  int64 msg_id = 1;
+  string text = 2;
+  User author = 3;
+  bool finalized = 4;
+  google.protobuf.Timestamp created_time = 5;
+  google.protobuf.Timestamp finalized_time = 6;
+}
+
+message HeartbeatRequest {
+  SessionToken session = 1;
+}
+
+message HeartbeatResponse {
 }

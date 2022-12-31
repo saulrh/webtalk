@@ -2,6 +2,9 @@ from webtalk.protos import webtalk_pb2_grpc
 from webtalk.protos import webtalk_pb2
 import secrets
 import dataclasses
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class InvalidSessionError(Exception):
@@ -18,16 +21,15 @@ class SessionManager:
     def __init__(self):
         self._sessions = {}
 
-    def is_session_valid(self, ses):
-        return ses.token in self._sessions
-
-    def ensure_session_is_valid(self, ses):
-        if not self.is_session_valid(ses):
+    def get_user_for_session(self, ses):
+        st = self._sessions.get(ses.token, None)
+        if not st:
             raise InvalidSessionError()
+        return st.user
 
     def _make_new_token(self):
         def generate():
-            return webtalk_pb2.SessionToken(token=secrets.token_bytes(64))
+            return webtalk_pb2.SessionToken(token=secrets.token_hex(16).encode("utf-8"))
 
         s = generate()
         while s.token in self._sessions:
@@ -43,11 +45,6 @@ class SessionManager:
         return s
 
     def remove_session(self, ses):
-        self.ensure_session_is_valid(ses)
-        u = self._sessions[ses.token].user
+        u = self.get_user_for_session(ses)
         del self._sessions[ses.token]
         return u
-
-    def get_user_for_session(self, ses):
-        self.ensure_session_is_valid(ses)
-        return self._sessions[ses.token].user

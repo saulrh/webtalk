@@ -21,8 +21,8 @@ class UserManager:
         return u
 
     def add_user(self, nick):
-        for _, user in self._users:
-            if user.nick == request.nick:
+        for _, user in self._users.items():
+            if user.nick == nick:
                 raise NickTakenError()
 
         new_uid = self._make_new_uid()
