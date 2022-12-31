@@ -13,6 +13,7 @@ from google.protobuf import timestamp_pb2
 from webtalk import proto_utils
 
 ID_MESSAGE_ENTRY = "message-entry"
+ID_MESSAGE_ENTRY_INPUT = "message-entry-input"
 ID_USER_LIST = "user-list"
 ID_MESSAGE_LIST = "message-list"
 
@@ -57,8 +58,25 @@ class Message(textual.widgets.Static):
         yield MessageText()
 
 
-class MessageEntry(textual.widgets.Input):
-    pass
+class MessageEntry(textual.widgets.Static):
+    def compose(self) -> textual.app.ComposeResult:
+        yield textual.widgets.Input(id=ID_MESSAGE_ENTRY_INPUT)
+
+    class Changed(textual.message.Message):
+        def __init__(self, sender: textual.message.MessageTarget, text: str) -> None:
+            self.text = text
+            super().__init__(sender)
+
+    class Sent(textual.message.Message):
+        def __init__(self, sender: textual.message.MessageTarget, text: str) -> None:
+            self.text = text
+            super().__init__(sender)
+
+    async def on_input_submitted(self, message):
+        await self.emit(MessageEntry.Sent(self, message.value))
+
+    async def on_input_changed(self, message):
+        await self.emit(MessageEntry.Changed(self, message.value))
 
 
 class MessageList(textual.widgets.Static):
@@ -74,10 +92,11 @@ class WebtalkApp(textual.app.App):
 
     def __init__(self, *args, nick, **kwargs):
         self._nick = nick
+        self._current_msg_id = None
         super().__init__(*args, **kwargs)
 
-    async def on_unmount(self) -> None:
-        await self._logout()
+    # async def on_unmount(self) -> None:
+    #     await self._logout()
 
     async def on_mount(self) -> None:
         await self._login()
@@ -102,17 +121,36 @@ class WebtalkApp(textual.app.App):
             await asyncio.sleep(HEARTBEAT_FREQUENCY.total_seconds())
             await self._stub.Heartbeat(webtalk_pb2.HeartbeatRequest())
 
-    async def on_input_submitted(self, message) -> None:
-        # Finalize it and send it off to the server
-        self.log("on_submit", message=message.value)
-        now = proto_utils.timestamp_now()
-        request = webtalk_pb2.UpdateMessageRequest()
-        request.session.CopyFrom(self._session)
-        request.msg.text = message.value
-        request.msg.finalized = True
-        await self._stub.UpdateMessage(request)
-        # And then clear the box
-        message.sender.value = ""
+    async def on_message_entry_sent(self, message) -> None:
+        # Send it off to the server for finalization
+        await self._stub.UpdateMessage(
+            webtalk_pb2.UpdateMessageRequest(
+                session=self._session,
+                msg=webtalk_pb2.Message(
+                    msg_id=self._current_msg_id,
+                    text=message.text,
+                    finalized=True,
+                ),
+            )
+        )
+        # Start a new message
+        self._current_msg_id = None
+        # And clear the input box
+        inp = self.query_one("#" + ID_MESSAGE_ENTRY_INPUT, textual.widgets.Input)
+        inp.value = ""
+
+    async def on_message_entry_changed(self, message) -> None:
+        response = await self._stub.UpdateMessage(
+            webtalk_pb2.UpdateMessageRequest(
+                session=self._session,
+                msg=webtalk_pb2.Message(
+                    text=message.text,
+                    msg_id=self._current_msg_id,
+                    finalized=False,
+                ),
+            )
+        )
+        self._current_msg_id = response.msg.msg_id
 
     async def _do_receive_messages(self) -> None:
         self.log("RECEIVE MESSAGES")

@@ -8,7 +8,7 @@ service Webtalk {
   rpc Login(LoginRequest) returns (LoginResponse) {}
   rpc Logout(LogoutRequest) returns (LogoutResponse) {}
   rpc UpdateMessage(UpdateMessageRequest) returns (UpdateMessageResponse) {}
-  rpc UpdateMessages(stream UpdateMessageRequest) returns (UpdateMessageResponse) {}
+  rpc UpdateMessages(stream UpdateMessageRequest) returns (stream UpdateMessageResponse) {}
   rpc ReceiveMessages(ReceiveMessageRequest) returns (stream ReceiveMessageResponse) {}
   rpc Heartbeat(HeartbeatRequest) returns (HeartbeatResponse) {}
 }
@@ -44,6 +44,7 @@ message UpdateMessageRequest {
 }
 
 message UpdateMessageResponse {
+  Message msg = 1;
 }
 
 message ReceiveMessageRequest {

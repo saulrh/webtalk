@@ -42,6 +42,7 @@ class SessionManager:
             ses=s,
             user=user,
         )
+        logger.debug("new session: %s", s)
         return s
 
     def remove_session(self, ses):

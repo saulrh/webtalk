@@ -18,7 +18,7 @@ class WebtalkServicer(webtalk_pb2_grpc.WebtalkServicer):
         self._sessions = session_manager.SessionManager()
         self._users = user_manager.UserManager()
         self._messages = message_manager.MessageManager()
-        self._update_queue = asyncio.Queue()
+        self._update_queues = []
         super().__init__(*args, **kwargs)
 
     async def _validate_session(self, ses, context):
@@ -55,7 +55,10 @@ class WebtalkServicer(webtalk_pb2_grpc.WebtalkServicer):
         logger.debug("incoming update: %s", request)
         u = await self._validate_session(request.session, context)
         try:
-            self._messages.update_message(request.msg, u)
+            existing_message = self._messages.update_message(request.msg, u)
+            for q in self._update_queues:
+                await q.put(existing_message.msg_id)
+            return webtalk_pb2.UpdateMessageResponse(msg=existing_message)
         except message_manager.NoPermissionToEditError:
             await context.abort(
                 code=grpc.StatusCode.PERMISSION_DENIED,
@@ -66,27 +69,22 @@ class WebtalkServicer(webtalk_pb2_grpc.WebtalkServicer):
                 code=grpc.StatusCode.INVALID_ARGUMENT,
                 details="message already finalized and cannot be updated",
             )
-        await self._update_queue.put(request.msg.msg_id)
-        return webtalk_pb2.UpdateMessageResponse()
 
     async def UpdateMessages(self, request_iterator, context):
         for request in request_iterator:
-            self.UpdateMessage(request, context)
-        return webtalk_pb2.UpdateMessageResponse()
+            yield self.UpdateMessage(request, context)
 
     async def ReceiveMessages(self, request, context):
         logger.debug("incoming receive: %s", request)
         u = await self._validate_session(request.session, context)
+        q = asyncio.Queue()
+        self._update_queues.append(q)
         while True:
-            updated_msg_id = await self._update_queue.get()
-            updated_msg = self._message_manager.get_message(updated_msg_id)
+            updated_msg_id = await q.get()
+            updated_msg = self._messages.get_message(updated_msg_id)
             logger.debug("outgoing message: %s", updated_msg)
-            yield ReceiveMessageResponse(
-                {
-                    "msg": updated_msg,
-                }
-            )
-            self._update_queue.task_done()
+            yield webtalk_pb2.ReceiveMessageResponse(msg=updated_msg)
+            q.task_done()
 
 
 async def serve_async():
